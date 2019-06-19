@@ -23,6 +23,7 @@
     V5.12	Populate state.devices with more info
     V5.13	Fix pause switch behaviour, create separate offSeason switch in state
     V5.14	Sun in sync with Wind events
+    V5.20	Multiple pause switches , assign shades to pause switches
  
 */
 
@@ -33,7 +34,7 @@ import Calendar.*
 import groovy.time.*
 
 
-private def runningVersion() 	{"5.14"}
+private def runningVersion() 	{"5.20"}
 
 definition(
     name: "Smart Screens",
@@ -233,9 +234,15 @@ def pageSetupForecastIO() {
             label title:"Assign a name", required:false
             input "z_TRACE", "bool", default: false, title: "Put out trace log", multiple: false, required: true
             input "z_CallReset", "capability.switch", default: false, title: "Call Reset When On", multiple: false, required: false
-            input "z_PauseSwitch", "capability.switch", default:false, title:"Switch that Pauses all scheduling", multiple: false, required:false
-
-        }    
+            input "z_PauseSwitch", "capability.switch", title:"Switch that Pauses all scheduling", multiple: false, submitOnChange: true, required:false
+        }
+        /* if (z_PauseSwitch != null) {
+            section("Assign shades to pause switch",hideable:true, hidden:true) {
+                z_PauseSwitch.each {
+                    input "z_Pause_${it.id}", "capability.windowShade", default:false, title:"Assign shades to $it.name}", multiple:true, required:false
+                }
+	        }
+        } */
     }
 }
 
@@ -636,8 +643,20 @@ def initialize() {
        
     runEvery10Minutes(checkForWind)
     
-    if (z_PauseSwitch) subscribe(z_PauseSwitch, "switch", pauseHandler)
-    if (z_CallReset) subscribe(z_CallReset, "switch", resetHandler)
+    if (settings.z_PauseSwitch) subscribe(z_PauseSwitch, "switch", pauseHandler)
+    if (settings.z_CallReset) subscribe(z_CallReset, "switch", resetHandler)
+}
+
+private def pauseGroup(shadeDevid) {
+	def rc = false
+    settings.z_pauseSwitch.each { pauseDev ->
+    	if (pauseDev.currentValue("switch") == "on") {
+			"z_Pause_${pauseDev.id}".each { shade ->
+            	if (rc == false && shade.id == shadeDevid) rc = true
+            }
+        }
+    }
+	return rc
 }
 
 private def getCountry() {
@@ -1181,7 +1200,8 @@ private def operateBlind(blind) {
         return false
     }
 
-    if (state.pause && blind.requestor.matches("Wind|XX") == false) {
+    //if (state.pause && blind.requestor.matches("Wind|XX") == false) {
+    if (pauseGroup(id) == true && blind.requestor.matches("Wind|XX") == false) {
     	TRACE("[operateBlind] PAUSE has been set for ${state.devices[id].blindName}, no action")
         return false
     }
