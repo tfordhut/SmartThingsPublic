@@ -31,6 +31,7 @@
  *	1.24 send tempScale attribute
  *	1.25 duplicate childs for tap an switch solved
  *	2.00 HubId in device
+ *	2.01 FOH as ZGPSwitch
  *	
  */
 
@@ -45,7 +46,7 @@ definition(
 		iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Partner/hue@2x.png",
 		singleInstance: true
 )
-private def runningVersion() 	{"2.00"}
+private def runningVersion() 	{"2.01"}
 
 preferences {
 	page(name:pageMain)
@@ -699,7 +700,7 @@ def handlePoll(physicalgraph.device.HubResponse hubResponse) {
                     devType = null
                     switch (sensor.type) {
                         case "ZGPSwitch":
-                            devType = "Hue Tap"
+                            if (sensor.modelid == "FOHSWITCH") devType = "Hue Switch" else devType = "Hue Tap"
                             break
                         case "ZLLPresence":
                             devType = "Hue Motion"
@@ -761,7 +762,7 @@ def handlePoll(physicalgraph.device.HubResponse hubResponse) {
                         state.devices[dni].lastUpdated = sensor.state.lastupdated
                         switch (state.devices[dni].type) {
                             case "ZGPSwitch":
-                                TRACE("[handlePoll] Buttonpress Tap ${dni} ${sensor.state.buttonevent}")
+                                TRACE("[handlePoll] Buttonpress ${dni} ${sensor.state.buttonevent}")
                                 sensorDev.buttonEvent(sensor.state.buttonevent)                          
                                 break
                             case "ZLLPresence":
