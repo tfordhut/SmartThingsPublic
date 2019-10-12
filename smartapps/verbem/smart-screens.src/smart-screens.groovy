@@ -68,10 +68,10 @@ def pageSetupForecastIO() {
 	if (!state.country) getCountry() 
     if (!state.devices) state.devices = [:]
     
-    def dni = "SmartScreens Pause Switch"
-    def dev = getChildDevice(dni)
-    if (!dev) dev = addChildDevice("verbem", "domoticzOnOff", dni, getHubID(), [name:dni, label:dni, completedSetup: true])
-    pause 5
+    //def dni = "SmartScreens Pause Switch"
+    //def dev = getChildDevice(dni)
+    //if (dev == null) dev = addChildDevice("verbem", "domoticzOnOff", dni, getHubID(), [name:dni, label:dni, completedSetup: true])
+    //pause 5
 
     def pageSetupLatitude = location.latitude.toString()
     def pageSetupLongitude = location.longitude.toString()
@@ -135,7 +135,7 @@ def pageSetupForecastIO() {
     
     def inputSensors = [
         name:       "z_sensors",
-        type:       "capability.sensor",
+        type:       "device.NetatmoWind",
         title:      "Which NETATMO wind devices?",
         multiple:   true,
         required:   false
@@ -208,7 +208,7 @@ def pageSetupForecastIO() {
         section("Shades Control", hideable:true) {
                         
 			paragraph image:"https://raw.githubusercontent.com/verbem/SmartThingsPublic/master/smartapps/verbem/smart-screens.src/RollerShutter.png", "Select Window Shades"
-            input "z_blinds", "capability.windowShade", multiple:true, submitOnChange: true, required:false
+            input "z_blinds", "capability.windowShade", multiple:true
             
 			paragraph image:"https://raw.githubusercontent.com/verbem/SmartThingsPublic/master/smartapps/verbem/smart-screens.src/Settings.png", "Configure Window Shades"
             if (settings.z_blinds) z_blinds.each {href "pageConfigureBlinds", title:"${it.name}", description:"", params: it}
@@ -233,8 +233,8 @@ def pageSetupForecastIO() {
         section("Options", hideable:true, hidden:true) {
             label title:"Assign a name", required:false
             input "z_TRACE", "bool", default: false, title: "Put out trace log", multiple: false, required: true
-            input "z_CallReset", "capability.switch", default: false, title: "Call Reset When On", multiple: false, required: false
-            input "z_PauseSwitch", "capability.switch", title:"Switch that Pauses all scheduling", multiple: false, submitOnChange: true, required:false
+            //input "z_CallReset", "capability.switch", title: "Call Reset When On", multiple: false, required: false
+            //input "z_PauseSwitch", "capability.switch", title:"Switch that Pauses all scheduling", multiple: false , submitOnChange: true, required:false
         }
         /* if (z_PauseSwitch != null) {
             section("Assign shades to pause switch",hideable:true, hidden:true) {
@@ -275,7 +275,7 @@ def pageConfigureBlinds(dev) {
 
                 if (it.completionTimeState?.value) completionTime = Date.parseToStringDate(it.completionTimeState.value).format('ss').toInteger()
 
-                if (state.devices[devId].completionTime > 0) {
+                if (state.devices[devId]?.completionTime > 0) {
                 		blindOptions.add("Dynamic")
                         blindOptions.add("Down 25%")
                         blindOptions.add("Down 50%")
@@ -1565,7 +1565,7 @@ private def offSeason() {
         def dateTimeN = new Date().parse(df, justNow)
         if (dateTimeN >= dateTimeS && dateTimeN <= dateTimeE) {
         	log.trace "Off SEASON, set pause switch device ON"
-            def dev = getChildDevice("Smart Screen Pause Switch")
+            def dev = getChildDevice("SmartScreens Pause Switch")
             if (dev) dev.sendEvent(name: "switch", value: "on")
             pauseReturn = true
         }
